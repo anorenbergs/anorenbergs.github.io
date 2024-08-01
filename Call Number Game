@@ -1,0 +1,186 @@
+let books = [];
+let selectedBooks = [];
+let score = 100;
+let difficulty = 'easy';
+let achievements = [];
+let leaderboard = [];
+
+const hints = [
+    "LOC call numbers are sorted alphabetically by the first letter.",
+    "If the first letters are the same, sort by the second letter.",
+    "After the letters, compare the whole numbers.",
+    "If the whole numbers are the same, compare the decimal parts.",
+    "Remember, it's like alphabetical order, but with numbers too!"
+];
+
+function generateCallNumber() {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const firstLetter = letters[Math.floor(Math.random() * letters.length)];
+    const secondLetter = letters[Math.floor(Math.random() * letters.length)];
+    const number = Math.floor(Math.random() * 9000) + 1000;
+    const decimal = Math.random().toFixed(2).substring(2);
+    return `${firstLetter}${secondLetter} ${number}.${decimal}`;
+}
+
+function setDifficulty() {
+    difficulty = document.getElementById('difficulty').value;
+    newGame();
+}
+
+function setTheme() {
+    const theme = document.getElementById('theme').value;
+    document.body.className = theme;
+}
+
+function newGame() {
+    books = [];
+    selectedBooks = [];
+    score = 100;
+    const bookCount = difficulty === 'easy' ? 5 : difficulty === 'medium' ? 7 : 10;
+    for (let i = 0; i < bookCount; i++) {
+        books.push(generateCallNumber());
+    }
+    books.sort();
+    renderBooks();
+    document.getElementById('message').textContent = '';
+    document.getElementById('hint').textContent = '';
+    document.getElementById('explanation').textContent = '';
+    document.getElementById('score').textContent = `Score: ${score}`;
+    document.getElementById('mistakes-list').style.display = 'none';
+    document.getElementById('leaderboard').style.display = 'none';
+    document.getElementById('achievements').style.display = 'none';
+}
+
+function renderBooks() {
+    const bookContainer = document.getElementById('book-container');
+    bookContainer.innerHTML = '';
+    const shuffledBooks = [...books].sort(() => Math.random() - 0.5);
+    shuffledBooks.forEach(book => {
+        const bookElement = document.createElement('div');
+        bookElement.className = 'book';
+        bookElement.textContent = book;
+        bookElement.onclick = () => selectBook(book);
+        bookContainer.appendChild(bookElement);
+    });
+}
+
+function selectBook(book) {
+    const index = selectedBooks.indexOf(book);
+    if (index === -1) {
+        selectedBooks.push(book);
+    } else {
+        selectedBooks.splice(index, 1);
+    }
+    renderBooks();
+    const bookElements = document.querySelectorAll('.book');
+    bookElements.forEach(element => {
+        if (selectedBooks.includes(element.textContent)) {
+            element.style.backgroundColor = '#008CBA';
+        } else {
+            element.style.backgroundColor = '#4CAF50';
+        }
+    });
+}
+
+function checkOrder() {
+    const correct = JSON.stringify(selectedBooks) === JSON.stringify(books);
+    if (correct) {
+        document.getElementById('message').textContent = 'Correct! Well done!';
+        document.getElementById('score').textContent = `Final Score: ${score}`;
+        updateLeaderboard(score);
+        checkAchievements();
+    } else {
+        document.getElementById('message').textContent = 'Not quite right. Try again!';
+        score -= 5;
+        document.getElementById('score').textContent = `Score: ${score}`;
+    }
+    explainOrder();
+}
+
+function getHint() {
+    const hintIndex = Math.floor(Math.random() * hints.length);
+    document.getElementById('hint').textContent = hints[hintIndex];
+    score -= 10;
+    document.getElementById('score').textContent = `Score: ${score}`;
+}
+
+function toggleMistakes() {
+    const mistakesList = document.getElementById('mistakes-list');
+    mistakesList.style.display = mistakesList.style.display === 'none' ? 'block' : 'none';
+}
+
+function explainOrder() {
+    let explanation = "The correct order is:\n";
+    books.forEach((book, index) => {
+        explanation += `${index + 1}. ${book}\n`;
+    });
+    explanation += "\nRemember: First sort by letters, then by numbers, and finally by decimals.";
+    document.getElementById('explanation').textContent = explanation;
+    document.getElementById('explanation').style.display = 'block';
+}
+
+function updateLeaderboard(score) {
+    leaderboard.push(score);
+    leaderboard.sort((a, b) => b - a);
+    leaderboard = leaderboard.slice(0, 5);
+    localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+    renderLeaderboard();
+}
+
+function renderLeaderboard() {
+    const leaderboardList = document.getElementById('leaderboard-list');
+    leaderboardList.innerHTML = '';
+    leaderboard.forEach((score, index) => {
+        const li = document.createElement('li');
+        li.textContent = `${index + 1}. Score: ${score}`;
+        leaderboardList.appendChild(li);
+    });
+}
+
+function toggleLeaderboard() {
+    const leaderboardDiv = document.getElementById('leaderboard');
+    leaderboardDiv.style.display = leaderboardDiv.style.display === 'none' ? 'block' : 'none';
+}
+
+function checkAchievements() {
+    if (score === 100 && !achievements.includes('Perfect Score')) {
+        achievements.push('Perfect Score');
+    }
+    if (difficulty === 'hard' && !achievements.includes('Hard Mode Champion')) {
+        achievements.push('Hard Mode Champion');
+    }
+    localStorage.setItem('achievements', JSON.stringify(achievements));
+    renderAchievements();
+}
+
+function renderAchievements() {
+    const achievementsList = document.getElementById('achievements-list');
+    achievementsList.innerHTML = '';
+    achievements.forEach(achievement => {
+        const div = document.createElement('div');
+        div.className = 'achievement';
+        div.textContent = achievement;
+        achievementsList.appendChild(div);
+    });
+}
+
+function toggleAchievements() {
+    const achievementsDiv = document.getElementById('achievements');
+    achievementsDiv.style.display = achievementsDiv.style.display === 'none' ? 'block' : 'none';
+}
+
+function startPracticeMode() {
+    // Implement practice mode logic here
+    alert('Practice mode started! Focus on arranging without scoring.');
+}
+
+// Initialize the game
+function init() {
+    leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+    achievements = JSON.parse(localStorage.getItem('achievements')) || [];
+    renderLeaderboard();
+    renderAchievements();
+    newGame();
+}
+
+init();
